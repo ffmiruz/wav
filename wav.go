@@ -4,9 +4,7 @@ package wav
 import (
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
-	"os"
 )
 
 const (
