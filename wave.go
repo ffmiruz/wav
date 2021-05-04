@@ -43,10 +43,11 @@ type Header struct {
 
 // fmt sub-chunk.
 type FmtChunk struct {
-	ID            uint32 // 4 bytes big endian
-	Size          uint32 // 4 bytes little endian
-	AudioFormat   uint16 // 2 bytes little endian
-	Channel       uint16 // 2 bytes little endian
+	ID          uint32 // 4 bytes big endian
+	Size        uint32 // 4 bytes little endian
+	AudioFormat uint16 // 2 bytes little endian
+	Channel     uint16 // 2 bytes little endian
+	// Sample per second
 	SampleRate    uint32 // 4 bytes little endian
 	ByteRate      uint32 // 4 bytes little endian
 	BlockAlign    uint16 // 2 bytes little endian
@@ -85,8 +86,8 @@ func main() {
 
 	riffwave := RIFF{}
 	err = riffwave.Parse(file)
-	fmt.Printf("%x\n", riffwave)
-	fmt.Println(riffwave.BitsPerSample)
+	fmt.Printf("%v\n", riffwave)
+	riffwave.ParseData(file)
 
 }
 
@@ -163,4 +164,57 @@ func ParseDataChunk(r io.Reader) (DataChunk, error) {
 	dataChunk.Size = binary.LittleEndian.Uint32(buf[4:8])
 	dataChunk.Data = r
 	return dataChunk, err
+}
+
+type ChannelData []int
+
+func (f *RIFF) ParseData(r io.Reader) error {
+	var err error
+	sampleCount := int(f.DataChunk.Size) / int(f.FmtChunk.Channel) / int(f.FmtChunk.BitsPerSample/8)
+	data := make([]ChannelData, f.FmtChunk.Channel)
+
+	for i := range data {
+		chData := make([]int, sampleCount)
+		data[i] = chData
+	}
+
+	buf := make([]byte, 2)
+	for i := 0; i < sampleCount; i++ {
+		for j := 0; j < len(data); j++ {
+			_, err := r.Read(buf)
+			if err != nil {
+				if err == io.EOF {
+					// TODO:handle any remainding bytes.
+					break
+				}
+				return err
+			}
+			data[j][i] = int(int16(binary.LittleEndian.Uint16(buf)))
+		}
+	}
+
+	fmt.Println(data[0][0:100])
+	return err
+
+	// var sampleparser func([]byte) uint16
+
+	// switch f.FmtChunk.BitsPerSample {
+	// case 8:
+	// 	sampleparser = binary.LittleEndian.Uint16
+	// case 16:
+	// 	sampleparser = binary.LittleEndian.Uint16
+	// case 32:
+	// 	sampleparser = binary.LittleEndian.Uint16
+	// default:
+	// 	return errors.New("Unsupported bits per sample")
+
+	// }
+
+	// buf := make([]byte, 2)
+	// for i := 0; i < samples; i++ {
+	// 	for j := 0; j < int(f.FmtChunk.Channel); j++ {
+	// 		channelData[i][j] = int(sampleparser(r))
+	// 	}
+	// }
+	// fmt.Println(channelData[0][0])
 }
