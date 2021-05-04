@@ -178,18 +178,26 @@ func (f *RIFF) ParseData(r io.Reader) error {
 		data[i] = chData
 	}
 
-	buf := make([]byte, 2)
+	// Enough buffer to fit Uint32 for 32 bits per sample
+	buf := make([]byte, 4)
 	for i := 0; i < sampleCount; i++ {
 		for j := 0; j < len(data); j++ {
 			_, err := r.Read(buf)
-			if err != nil {
-				if err == io.EOF {
-					// TODO:handle any remainding bytes.
-					break
-				}
-				return err
+			if err != nil && err != io.EOF {
+				return errors.New("fail to parse sample data")
 			}
-			data[j][i] = int(int16(binary.LittleEndian.Uint16(buf)))
+			switch f.FmtChunk.BitsPerSample {
+			case 8:
+				data[j][i] = int(int8(buf[0]))
+			case 16:
+				data[j][i] = int(int16(binary.LittleEndian.Uint16(buf)))
+			case 32:
+				data[j][i] = int(int32(binary.LittleEndian.Uint32(buf)))
+			default:
+				return errors.New("unsupported bits per sample")
+
+			}
+
 		}
 	}
 
