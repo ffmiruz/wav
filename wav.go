@@ -205,12 +205,25 @@ func (file File) MarshalData(buf []byte) {
 
 	sampleCount := len(file.DataChunk.Data[0])
 	data := file.DataChunk.Data
+	bps := file.FmtChunk.BitsPerSample
 
 	// pos is current position in buf.
 	for sample, pos := 0, 0; sample < sampleCount; sample++ {
 		for channel := range data {
-			binary.LittleEndian.PutUint16(buf[pos:pos+2], uint16(int(data[channel][sample])))
-			pos = pos + 2
+
+			switch bps {
+			case 8:
+				buf[pos] = byte(data[channel][sample])
+				pos++
+			case 16:
+				binary.LittleEndian.PutUint16(buf[pos:pos+2], uint16(data[channel][sample]))
+				pos = pos + 2
+			case 32:
+				binary.LittleEndian.PutUint32(buf[pos:pos+4], uint32(data[channel][sample]))
+				pos = pos + 4
+			default:
+				return errors.New("unsupported bits per sample")
+			}
 		}
 	}
 }
