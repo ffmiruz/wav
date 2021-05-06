@@ -175,3 +175,42 @@ func (file *File) ParseData(r io.Reader) error {
 	file.DataChunk.Data = data
 	return err
 }
+
+func Marshal(file File) []byte {
+	buf := make([]byte, 4+4+file.Header.Size)
+
+	binary.BigEndian.PutUint32(buf[0:4], file.Header.Id)
+	binary.LittleEndian.PutUint32(buf[4:8], file.Header.Size)
+	binary.BigEndian.PutUint32(buf[8:12], file.Header.Format)
+
+	binary.BigEndian.PutUint32(buf[12:16], file.FmtChunk.ID)
+	binary.LittleEndian.PutUint32(buf[16:20], file.FmtChunk.Size)
+	binary.LittleEndian.PutUint16(buf[20:22], file.FmtChunk.AudioFormat)
+	binary.LittleEndian.PutUint16(buf[22:24], file.FmtChunk.Channel)
+	binary.LittleEndian.PutUint32(buf[24:28], file.FmtChunk.SampleRate)
+	binary.LittleEndian.PutUint32(buf[28:32], file.FmtChunk.ByteRate)
+	binary.LittleEndian.PutUint16(buf[32:34], file.FmtChunk.BlockAlign)
+	binary.LittleEndian.PutUint16(buf[34:36], file.FmtChunk.BitsPerSample)
+
+	binary.BigEndian.PutUint32(buf[36:40], file.DataChunk.ID)
+	binary.LittleEndian.PutUint32(buf[40:44], file.DataChunk.Size)
+
+	file.MarshalData(buf[44:])
+
+	return buf
+
+}
+
+func (file File) MarshalData(buf []byte) {
+
+	sampleCount := len(file.DataChunk.Data[0])
+	data := file.DataChunk.Data
+
+	// pos is current position in buf.
+	for sample, pos := 0, 0; sample < sampleCount; sample++ {
+		for channel := range data {
+			binary.LittleEndian.PutUint16(buf[pos:pos+2], uint16(int(data[channel][sample])))
+			pos = pos + 2
+		}
+	}
+}
