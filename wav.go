@@ -152,7 +152,7 @@ func (file *File) UnmarshalData(r io.Reader) error {
 	}
 
 	// Enough buffer to fit Uint32 for 32 bits per sample
-	buf := make([]byte, 4)
+	buf := make([]byte, 2)
 	for sample := 0; sample < sampleCount; sample++ {
 		for channel := 0; channel < len(data); channel++ {
 			_, err := r.Read(buf)
