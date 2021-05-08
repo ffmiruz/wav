@@ -152,19 +152,30 @@ func (file *File) UnmarshalData(r io.Reader) error {
 	}
 
 	// Enough buffer to fit Uint32 for 32 bits per sample
-	buf := make([]byte, 2)
+	buf := make([]byte, 4)
 	for sample := 0; sample < sampleCount; sample++ {
 		for channel := 0; channel < len(data); channel++ {
-			_, err := r.Read(buf)
-			if err != nil && err != io.EOF {
-				return errors.New("fail to parse sample data")
-			}
+
 			switch file.FmtChunk.BitsPerSample {
 			case 8:
+				buf = buf[0:1]
+				_, err := r.Read(buf)
+				if err != nil && err != io.EOF {
+					return errors.New("fail to parse sample data")
+				}
 				data[channel][sample] = int(int8(buf[0]))
 			case 16:
+				buf = buf[0:2]
+				_, err := r.Read(buf)
+				if err != nil && err != io.EOF {
+					return errors.New("fail to parse sample data")
+				}
 				data[channel][sample] = int(int16(binary.LittleEndian.Uint16(buf)))
 			case 32:
+				_, err := r.Read(buf)
+				if err != nil && err != io.EOF {
+					return errors.New("fail to parse sample data")
+				}
 				data[channel][sample] = int(int32(binary.LittleEndian.Uint32(buf)))
 			default:
 				return errors.New("unsupported bits per sample")
