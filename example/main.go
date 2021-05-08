@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/ffmiyo/wav"
+	"io/ioutil"
 	"os"
 )
 
@@ -15,6 +16,12 @@ func main() {
 	defer file.Close()
 
 	chunk, _ := wav.Unmarshal(file)
-	fmt.Println(chunk.Data[0][0:100])
+
+	buf := wav.Marshal(chunk)
+
+	err = ioutil.WriteFile("copy.wav", buf, 0644)
+	if err != nil {
+		panic(err)
+	}
 
 }

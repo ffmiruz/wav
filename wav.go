@@ -77,7 +77,7 @@ func Unmarshal(r io.Reader) (File, error) {
 	if err != nil {
 		return file, err
 	}
-	err = file.ParseData(r)
+	err = file.UnmarshalData(r)
 	if err != nil {
 		return file, err
 	}
@@ -139,7 +139,7 @@ func (dat *DataChunk) Unmarshal(r io.Reader) error {
 	return err
 }
 
-func (file *File) ParseData(r io.Reader) error {
+func (file *File) UnmarshalData(r io.Reader) error {
 	var err error
 	// Number of sample in the data
 	sampleCount := int(file.DataChunk.Size) / int(file.FmtChunk.Channel) / int(file.FmtChunk.BitsPerSample/8)
@@ -201,7 +201,8 @@ func Marshal(file File) []byte {
 
 }
 
-func (file File) MarshalData(buf []byte) {
+func (file File) MarshalData(buf []byte) error {
+	var err error
 
 	sampleCount := len(file.DataChunk.Data[0])
 	data := file.DataChunk.Data
@@ -226,4 +227,5 @@ func (file File) MarshalData(buf []byte) {
 			}
 		}
 	}
+	return err
 }
