@@ -1,4 +1,5 @@
-// This package implements WAV file encoding and decoding.
+// This package implements WAV file encoding and decoding audio PCM data using
+// the Waveform Audio File Format https://en.wikipedia.org/wiki/WAV.
 package wav
 
 import (
@@ -65,19 +66,19 @@ type Sample []int
 
 func Unmarshal(r io.Reader) (File, error) {
 	file := File{}
-	err := file.Header.Unmarshal(r)
+	err := file.Header.unmarshal(r)
 	if err != nil {
 		return file, err
 	}
-	err = file.FmtChunk.Unmarshal(r)
+	err = file.FmtChunk.unmarshal(r)
 	if err != nil {
 		return file, err
 	}
-	err = file.DataChunk.Unmarshal(r)
+	err = file.DataChunk.unmarshal(r)
 	if err != nil {
 		return file, err
 	}
-	err = file.UnmarshalData(r)
+	err = file.unmarshalData(r)
 	if err != nil {
 		return file, err
 	}
@@ -85,7 +86,7 @@ func Unmarshal(r io.Reader) (File, error) {
 
 }
 
-func (h *Header) Unmarshal(r io.Reader) error {
+func (h *Header) unmarshal(r io.Reader) error {
 	buf := make([]byte, 12)
 	_, err := r.Read(buf)
 	if err != nil {
@@ -104,7 +105,7 @@ func (h *Header) Unmarshal(r io.Reader) error {
 	return err
 }
 
-func (fm *FmtChunk) Unmarshal(r io.Reader) error {
+func (fm *FmtChunk) unmarshal(r io.Reader) error {
 	buf := make([]byte, 24)
 	_, err := r.Read(buf)
 	if err != nil {
@@ -125,7 +126,7 @@ func (fm *FmtChunk) Unmarshal(r io.Reader) error {
 }
 
 // TODO: sanity check
-func (dat *DataChunk) Unmarshal(r io.Reader) error {
+func (dat *DataChunk) unmarshal(r io.Reader) error {
 	buf := make([]byte, 8)
 	_, err := r.Read(buf)
 	if err != nil {
@@ -139,7 +140,7 @@ func (dat *DataChunk) Unmarshal(r io.Reader) error {
 	return err
 }
 
-func (file *File) UnmarshalData(r io.Reader) error {
+func (file *File) unmarshalData(r io.Reader) error {
 	var err error
 	// Number of sample in the data
 	sampleCount := int(file.DataChunk.Size) / int(file.FmtChunk.Channel) / int(file.FmtChunk.BitsPerSample/8)
@@ -206,13 +207,13 @@ func Marshal(file File) []byte {
 	binary.BigEndian.PutUint32(buf[36:40], file.DataChunk.ID)
 	binary.LittleEndian.PutUint32(buf[40:44], file.DataChunk.Size)
 
-	file.MarshalData(buf[44:])
+	file.marshalData(buf[44:])
 
 	return buf
 
 }
 
-func (file File) MarshalData(buf []byte) error {
+func (file File) marshalData(buf []byte) error {
 	var err error
 
 	sampleCount := len(file.DataChunk.Data[0])
